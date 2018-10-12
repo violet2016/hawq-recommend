@@ -1,0 +1,76 @@
+-[ RECORD 1 ]---------------------
+schemaname | public
+relname    | lineitem
+reltuples  | 5.99861e+07
+-[ RECORD 2 ]---------------------
+schemaname | public
+relname    | orders
+reltuples  | 1.5e+07
+-[ RECORD 3 ]---------------------
+schemaname | public
+relname    | partsupp
+reltuples  | 8e+06
+-[ RECORD 4 ]---------------------
+schemaname | public
+relname    | part
+reltuples  | 2e+06
+-[ RECORD 5 ]---------------------
+schemaname | public
+relname    | customer
+reltuples  | 1.5e+06
+-[ RECORD 6 ]---------------------
+schemaname | public
+relname    | supplier
+reltuples  | 100000
+-[ RECORD 7 ]---------------------
+schemaname | public
+relname    | nation
+reltuples  | 25
+-[ RECORD 8 ]---------------------
+schemaname | public
+relname    | region
+reltuples  | 5
+-[ RECORD 9 ]---------------------
+schemaname | public
+relname    | e_orders
+reltuples  | 0
+-[ RECORD 10 ]--------------------
+schemaname | public
+relname    | errortable_lineitem
+reltuples  | 0
+-[ RECORD 11 ]--------------------
+schemaname | public
+relname    | e_lineitem
+reltuples  | 0
+-[ RECORD 12 ]--------------------
+schemaname | public
+relname    | errortable_orders
+reltuples  | 0
+-[ RECORD 13 ]--------------------
+schemaname | public
+relname    | e_customer
+reltuples  | 0
+-[ RECORD 14 ]--------------------
+schemaname | public
+relname    | e_partsupp
+reltuples  | 0
+-[ RECORD 15 ]--------------------
+schemaname | public
+relname    | e_supplier
+reltuples  | 0
+-[ RECORD 16 ]--------------------
+schemaname | public
+relname    | e_part
+reltuples  | 0
+-[ RECORD 17 ]--------------------
+schemaname | public
+relname    | e_region
+reltuples  | 0
+-[ RECORD 18 ]--------------------
+schemaname | public
+relname    | e_nation
+reltuples  | 0
+-[ RECORD 19 ]--------------------
+schemaname | hawq_toolkit
+relname    | __hawq_log_master_ext
+reltuples  | 0

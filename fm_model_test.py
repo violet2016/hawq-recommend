@@ -1,5 +1,5 @@
 import unittest
-from fm_model import vectorize_dic
+from fm_model import vectorize
 
 from itertools import count
 from collections import defaultdict
@@ -9,6 +9,6 @@ class vectorize_dic_test(unittest.TestCase):
     def test_vectorize_dic(self):
         user_ids = ['A', 'B', 'A']
         movie_ids = ['a', 'a', 'b']
-        res,_ = vectorize_dic([user_ids, movie_ids])
+        res,_ = vectorize([user_ids, movie_ids])
         print(res.todense())
         self.assertEqual(len(res.todense()), 3)
