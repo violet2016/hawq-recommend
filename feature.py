@@ -42,6 +42,9 @@ def _byteslist_feature(value):
 
 def _floatlist_feature(value):
     return tf.train.Feature(float_list=tf.train.FloatList(value=value))
+def _float_feature(value):
+    return tf.train.Feature(float_list=tf.train.FloatList(value=[value]))
+
 
 def write_to_tfrecord(feature_data_map, tfrecord_file):
     """ This example is to write a sample to TFRecord file. If you want to write
@@ -60,7 +63,19 @@ def write_to_tfrecord(feature_data_map, tfrecord_file):
                 }))
     writer.write(example.SerializeToString())
     writer.close()
-
+def write_to_tfrecord2(feature_data_map, tfrecord_file):
+    """ This example is to write a sample to TFRecord file. If you want to write
+    more samples, just use a loop.
+    """
+    writer = tf.python_io.TFRecordWriter(tfrecord_file)
+    # write label, shape, and image content to the TFRecord file
+    example = tf.train.Example(features=tf.train.Features(feature={
+                'env': _int64list_feature(feature_data_map['env']),
+                'label': _float_feature(feature_data_map['label'])
+                
+                }))
+    writer.write(example.SerializeToString())
+    writer.close()
 # def get_all_records(FILE):
 #     with tf.Session() as sess:
 #         filename_queue = tf.train.string_input_producer([ FILE ])
