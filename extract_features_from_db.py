@@ -47,8 +47,22 @@ def get_query_samples(conn, to_file, from_config):
             #     'segment_cpu_usage' : ['{0:.4g}'.format(num) for num in row[7]],
             #     'exec_time': row[8]
             # }
+        if row[8] == None or len(row[5]) == 0:
+            print("time is one or no plan, skip")
+            continue
+        all_ops = {}
+        total = 0
+        for op in row[5]:
+            total = total + 1
+            if op in all_ops:
+                all_ops[op] += 1
+            else:
+                all_ops[op] = 1
         feature_data = {
             'env': [row[0], len(row[7]), row[1], row[2]],
+            'query_plan_ops': [str.encode(d) for d in all_ops.keys()], #[str.encode(my_str) for my_str in row[5]],
+            'op_freq': [d/total for d in all_ops.values()],
+            'total_ops': total,
             'label': row[8]
         }
         print(feature_data)
@@ -56,9 +70,11 @@ def get_query_samples(conn, to_file, from_config):
         
         # write label, shape, and image content to the TFRecord file
         example = tf.train.Example(features=tf.train.Features(feature={
-                    'env': _int64list_feature(feature_data['env']),
+                    'env': _floatlist_feature(feature_data['env']),
+                    'query_plan_ops': _byteslist_feature(feature_data['query_plan_ops']),
+                    'op_freq': _floatlist_feature(feature_data['op_freq']),
+                    'total_ops': _float_feature(feature_data['total_ops']),
                     'label': _float_feature(feature_data['label'])
-                    
                     }))
         writer.write(example.SerializeToString())
     writer.close()
