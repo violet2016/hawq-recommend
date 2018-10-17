@@ -88,6 +88,7 @@ prediction = tf.layers.dense(net, 1, activation=tf.tanh)
 #y_norm = tf.Print(y_norm, [y_norm], "Y is: ")
 loss = tf.losses.mean_squared_error(prediction, tf.reshape(y_norm, (100,1))) # pass the second value from iter.get_net() as label
 train_op = tf.train.AdamOptimizer().minimize(loss)
+saver = tf.train.Saver()
 
 #loss = tf.reduce_mean(-tf.reduce_sum(y*tf.log(prediction), reduction_indices=1))
 #train_op = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
@@ -101,3 +102,6 @@ with tf.Session() as sess:
         _, loss_value = sess.run([train_op, loss])
 
         print("Iter: {}, Loss: {:.4f}".format(i, loss_value))
+        if loss_value < 0.001:
+            break
+    save_path = saver.save(sess, "./data/models/simple_net.ckpt")

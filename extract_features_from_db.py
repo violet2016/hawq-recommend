@@ -30,7 +30,7 @@ def get_query_samples(conn, to_file, from_config):
     cur.execute("select  query_plan_rows, cpu_size, mem_size, storage_size, data_size,\
                 query_plan_op_list, \
                 table_size_list , cpu_percent_list, total_exec_time_in_ms\
-                from samples where config_id >= %s and total_exec_time_in_ms is not NULL" % from_config)
+                from samples where is_test = true and config_id >= %s and total_exec_time_in_ms is not NULL" % from_config)
     feature_data = {}
     writer = tf.python_io.TFRecordWriter(to_file)
    # with open(to_file, mode='w') as dst_file:
