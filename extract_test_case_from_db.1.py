@@ -26,17 +26,15 @@ database = 'hawq-recommend'
 
 def get_query_samples(conn, to_file, from_config):
     cur = conn.cursor()
-    set_test = 'false'
-    if is_test == 1:
-        set_test = 'true'
     cur.execute("select  query_plan_rows, cpu_size, mem_size, storage_size, data_size,\
                 query_plan_op_list, \
-                table_size_list , cpu_percent_list, label_time\
-                from samples where is_test = %s and config_id >= %s and total_exec_time_in_ms is not NULL" % (set_test, from_config))
+                table_size_list \
+                from samples where is_test = true and config_id = %s and query_id = %s" % (from_config, query_id))
     feature_data = {}
     writer = tf.python_io.TFRecordWriter(to_file)
    # with open(to_file, mode='w') as dst_file:
         #dst_writer = csv.writer(dst_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    configs = {'seg' :[5, 10, 15, 20, 25, 30], 'cpu' :[500, 1000, 1500, 2000], 'mem': [500, 1000, 1500, 2000]}
     for row in cur.fetchall():
             # feature_data = {
             #     'query_plan_row_length': row[0],
@@ -49,9 +47,6 @@ def get_query_samples(conn, to_file, from_config):
             #     'segment_cpu_usage' : ['{0:.4g}'.format(num) for num in row[7]],
             #     'exec_time': row[8]
             # }
-        if row[8] == None or len(row[5]) == 0:
-            print("time is one or no plan, skip")
-            continue
         all_ops = {}
         total = 0
         for op in row[5]:
@@ -60,47 +55,43 @@ def get_query_samples(conn, to_file, from_config):
                 all_ops[op] += 1
             else:
                 all_ops[op] = 1
-        lable = 3
-        if row[8] >= 0.1:
-            label = 5
-        elif row[8] <= -0.1:
-            lable = 1
-        elif row[8] < 0.1 and row[8] > 0.03:
-            lable = 4
-        elif row[8] > -0.1 and row[8] < -0.03:
-            label = 2
-        #label = row[8]*100
-        feature_data = {
-            'cpu': row[1],
-            'env': [row[0], len(row[7]), row[2]],
-            'query_plan_ops': [str.encode(d) for d in all_ops.keys()], #[str.encode(my_str) for my_str in row[5]],
-            'op_freq': [d/total for d in all_ops.values()],
-            'total_ops': total,
-            'table_size': row[6],
-            'label': lable,
-        }
-        table_size_to_string = [str.encode(str(d)) for d in feature_data['table_size']]
-        print(feature_data)
+        
+        ops = [str.encode(d) for d in all_ops.keys()]
+        freq = [d/total for d in all_ops.values()]
+        table_size_to_string = [str.encode(str(d)) for d in row[6]]
+        for seg in configs['seg']:
+            for cpu in configs['cpu']:
+                for mem in configs['mem']:
+
+                    feature_data = {
+                        'cpu': cpu,
+                        'env': [row[0], seg, mem],
+                        'query_plan_ops': ops, #[str.encode(my_str) for my_str in row[5]],
+                        'op_freq': freq,
+                        'total_ops': total,
+                        'table_size': row[6]
+                    }
+        
+                    print(feature_data)
         #dst_writer.writerow(row[0], len(row[7]), row[1], row[2], row[8])
         
         # write label, shape, and image content to the TFRecord file
-        example = tf.train.Example(features=tf.train.Features(feature={
-                    'cpu': _float_feature(feature_data['cpu']),
-                    'env': _floatlist_feature(feature_data['env']),
-                    'query_plan_ops': _byteslist_feature(feature_data['query_plan_ops']),
-                    'op_freq': _floatlist_feature(feature_data['op_freq']),
-                    'total_ops': _float_feature(feature_data['total_ops']),
-                    'table_size': _byteslist_feature(table_size_to_string),
-                    'table_size_weight': _floatlist_feature(feature_data['table_size']),
-                    'label': _float_feature(feature_data['label'])
-                    }))
-        writer.write(example.SerializeToString())
+                    
+                    example = tf.train.Example(features=tf.train.Features(feature={
+                                'cpu': _float_feature(feature_data['cpu']),
+                                'env': _floatlist_feature(feature_data['env']),
+                                'query_plan_ops': _byteslist_feature(feature_data['query_plan_ops']),
+                                'op_freq': _floatlist_feature(feature_data['op_freq']),
+                                'total_ops': _float_feature(feature_data['total_ops']),
+                                'table_size': _byteslist_feature(table_size_to_string),
+                                'table_size_weight': _floatlist_feature(feature_data['table_size'])
+                                }))
+                    writer.write(example.SerializeToString())
     writer.close()
 filename = sys.argv[1]
 fromconfigid = sys.argv[2]
-is_test = sys.argv[3]
-if is_test == 1:
-    filename = filename+'_test'
+query_id = sys.argv[3]
+filename = filename+'_testcase'
 myConnection = psycopg2.connect( host=hostname, user=username, dbname=database )
 get_query_samples( myConnection, './data/queries_samples/'+filename, fromconfigid)
 myConnection.close()
