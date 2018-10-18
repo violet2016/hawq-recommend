@@ -1,2 +1,2 @@
-model_checkpoint_path: "simple_net.ckpt_13"
-all_model_checkpoint_paths: "simple_net.ckpt_13"
+model_checkpoint_path: "simple_net.ckpt_14"
+all_model_checkpoint_paths: "simple_net.ckpt_14"

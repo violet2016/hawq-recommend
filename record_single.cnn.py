@@ -20,7 +20,6 @@ def conv_net(x, weights, biases, dropout):
     # Reshape to match picture format [Height x Width x Channel]
     # Tensor input become 4-D: [Batch Size, Height, Width, Channel]
     x = tf.reshape(x, shape=[-1, 6, 6, 1])
-
     # Convolution Layer
     conv1 = conv2d(x, weights['wc1'], biases['bc1'])
     # Max Pooling (down-sampling)
@@ -89,18 +88,18 @@ def parser(serialized_example):
     # image = tf.cast(
     #     tf.transpose(tf.reshape(image, [DEPTH, HEIGHT, WIDTH]), [1, 2, 0]),
     #     tf.float32)
-    label = tf.cast(features['label'], tf.float32)
+    label = tf.cast(features['label'], tf.int32)
     #ops = fc.embedding_column(features['query_plan_ops'], dimension=8) 
     ops = features['query_plan_ops']
     freq = features['op_freq']
-    reshape_label = tf.reshape(features['label'], (1,1))
+    reshape_label = tf.one_hot(label, depth=5)
     reshape_cpu = tf.reshape(features['cpu'], (1,1))
     size_weight = features['table_size_weight']
     ts_string = tf.cast(features['table_size'], tf.string)
     #print("size is", size_weight, "string is ", ts_string)
     return reshape_cpu, features['env'], ts_string, size_weight , ops, freq, reshape_label
 
-EPOCHS = 10000
+EPOCHS = 1000
 BATCH_SIZE = 1
 learning_rate = 0.01
 # using two numpy arrays
@@ -118,7 +117,6 @@ dataset = dataset.batch(BATCH_SIZE)
 #iter = dataset.make_initializable_iterator()
 iter = dataset.make_one_shot_iterator()
 c, e, table_string, table_size, ops, freq, y = iter.get_next()
-#y = tf.Print(y, [y], "y is")
 # y_norm = tf.layers.batch_normalization(inputs=y,
 #         axis=-1,
 #         momentum=0.99,
@@ -137,41 +135,45 @@ transformed_columns = [
     env_columns
     
 ]
-x = tf.Print(e, [e, c, y], "x")
+#x = tf.Print(e, [e, c, y], "x")
 inputs = tf.feature_column.input_layer({'cpu': c, 'env': e, 'query_plan_ops' : ops, 'op_freq': freq, 'table_size': table_string, 'table_size_weight': table_size}, transformed_columns)
 num_classes = 5
+
 # Store layers weight & bias
 weights = {
     # 5x5 conv, 1 input, 32 outputs
-    'wc1': tf.Variable(tf.random_normal([5, 5, 1, 32])),
+    'wc1': tf.Variable(tf.random_normal([6, 6, 1, 16])),
     # 5x5 conv, 32 inputs, 64 outputs
-    'wc2': tf.Variable(tf.random_normal([5, 5, 32, 64])),
+    'wc2': tf.Variable(tf.random_normal([6, 6, 16, 32])),
     # fully connected, 7*7*64 inputs, 1024 outputs
-    'wd1': tf.Variable(tf.random_normal([2*2*64, 1024])),
+    'wd1': tf.Variable(tf.random_normal([2*2*32, 64])),
     # 1024 inputs, 10 outputs (class prediction)
-    'out': tf.Variable(tf.random_normal([1024, num_classes]))
+    'out': tf.Variable(tf.random_normal([64, num_classes]))
 }
 
 biases = {
-    'bc1': tf.Variable(tf.random_normal([32])),
-    'bc2': tf.Variable(tf.random_normal([64])),
-    'bd1': tf.Variable(tf.random_normal([1024])),
+    'bc1': tf.Variable(tf.random_normal([16])),
+    'bc2': tf.Variable(tf.random_normal([32])),
+    'bd1': tf.Variable(tf.random_normal([64])),
     'out': tf.Variable(tf.random_normal([num_classes]))
 }
 
 keep_prob = tf.placeholder(tf.float32)  # dropout (keep probability)
 
 # Construct model
+
 logits = conv_net(inputs, weights, biases, keep_prob)
+#logits = tf.Print(logits, [logits], "logits")
 prediction = tf.nn.softmax(logits)
-
+#prediction = tf.Print(prediction, [prediction], "prediction")
 # Define loss and optimizer
-loss_op = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
-    logits=logits, labels=y))
+#loss_op = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
+#   logits=logits, labels=y))
+loss_op = tf.losses.mean_squared_error(prediction, tf.reshape(y, (1,5)))
+#loss_op = tf.Print(loss_op, [loss_op], "loss_op")
 opt = tf.train.AdamOptimizer(learning_rate=learning_rate)
-tf.add_to_collection('pred_network', prediction)
+#tf.add_to_collection('pred_network', prediction)
 # one_hot_y = tf.one_hot(tf.cast(y, tf.int32), 1)
-
 # loss = tf.losses.mean_squared_error(prediction, one_hot_y) # pass the second value 
 # train_op = tf.train.AdamOptimizer().minimize(loss)
 saver = tf.train.Saver()
@@ -186,12 +188,14 @@ with tf.Session() as sess:
         
         # make a simple model
 
-        #print("run", sess.run(ops))
-        loss_value, in_, pred = sess.run([loss_op,inputs, prediction], feed_dict={keep_prob: 0.8})
+        y_out = sess.run(y)
+        print("y", y_out)
+        loss_value, in_, pred= sess.run([loss_op,inputs, prediction], feed_dict={keep_prob: 0.8})
 
         
         print("Iter: {}, Loss: {:.4f}".format(i, loss_value))
-            #print(in_)
+        print("pred", pred)
+
 
     save_path = saver.save(sess, "./data/models/simple_net.ckpt_14")
     # Test model
